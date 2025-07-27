@@ -409,6 +409,8 @@
                 <h2 class="text-xl font-semibold text-gray-800">질문 목록</h2>
                 <div class="flex items-center space-x-3">
                     <span id="post-count" class="text-sm bg-blue-100 text-blue-800 py-1 px-3 rounded-full">총 0개</span>
+                    <!-- 정렬 방식 토글 버튼 -->
+                    <button id="sort-toggle-btn" class="px-3 py-1 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition text-sm">정렬: 최신순</button>
                     <button id="refresh-btn" class="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition" title="새로고침">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" id="refresh-icon">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -460,8 +462,10 @@
         // 관리자 로그인 상태 (데이터 삭제 권한에만 사용)
         let isAdminLoggedIn = false; 
 
-        // 보기 방식 상태 (기본값: list) - 이제 서버에서 받아올 것임
+        // 보기 방식 상태 (기본값: list)
         let currentViewMode = 'list'; 
+        // 정렬 방식 상태 (기본값: latest)
+        let currentSortOrder = 'latest'; // 'latest' 또는 'oldest'
 
         // DOM 요소
         const submissionForm = document.getElementById('submission-form');
@@ -504,11 +508,14 @@
         const closeViewModeSelectorBtn = document.getElementById('close-view-mode-selector');
 
         // 게시물 배경색 관련 DOM 요소
-        const colorPreviewCircle = document.getElementById('color-preview-circle'); // 큰 미리보기 원
-        const colorSelectionContainer = document.getElementById('color-selection-container'); // 색상 원들을 감싸는 컨테이너
-        const colorSwatches = document.querySelectorAll('.color-swatch'); // 개별 색상 원들
-        const submissionModalContent = document.getElementById('submission-modal-content'); // 미리보기 적용 대상 (모달 배경)
-        const hiddenCardBackgroundColor = document.getElementById('hiddenCardBackgroundColor'); // 숨겨진 input
+        const colorPreviewCircle = document.getElementById('color-preview-circle'); 
+        const colorSelectionContainer = document.getElementById('color-selection-container'); 
+        const colorSwatches = document.querySelectorAll('.color-swatch'); 
+        const submissionModalContent = document.getElementById('submission-modal-content'); 
+        const hiddenCardBackgroundColor = document.getElementById('hiddenCardBackgroundColor'); 
+
+        // 정렬 방식 관련 DOM 요소
+        const sortToggleBtn = document.getElementById('sort-toggle-btn');
 
 
         // 디버그 로그 함수
@@ -548,6 +555,7 @@
             debugLocalEl.textContent = JSON.stringify({
                 likedPosts,
                 currentViewMode, 
+                currentSortOrder, // 정렬 방식 추가
                 localStorage: { ...localStorage }
             }, null, 2);
         }
@@ -635,6 +643,27 @@
             logDebug(`보기 방식 적용: ${currentViewMode}`);
         }
 
+        // ⭐⭐ 새로 추가: 게시물 정렬 함수 ⭐⭐
+        function applySorting(posts) {
+            if (currentSortOrder === 'latest') {
+                // 최신순: timestamp 내림차순 (최신 게시물이 먼저)
+                posts.sort((a, b) => {
+                    const dateA = new Date(a.timestamp);
+                    const dateB = new Date(b.timestamp);
+                    return dateB.getTime() - dateA.getTime();
+                });
+            } else { // 'oldest'
+                // 과거순: timestamp 오름차순 (오래된 게시물이 먼저)
+                posts.sort((a, b) => {
+                    const dateA = new Date(a.timestamp);
+                    const dateB = new Date(b.timestamp);
+                    return dateA.getTime() - dateB.getTime();
+                });
+            }
+            logDebug(`게시물 정렬 적용: ${currentSortOrder}`);
+            return posts; // 정렬된 게시물 배열 반환
+        }
+        // ⭐⭐ 여기까지 추가 ⭐⭐
 
         // 보기 방식을 서버에 업데이트하는 함수
         async function updateGlobalViewMode(newMode) {
@@ -680,8 +709,50 @@
             }
         }
 
+        // ⭐⭐ 새로 추가: 정렬 방식을 서버에 업데이트하는 함수 ⭐⭐
+        async function updateGlobalSortOrder(newSortOrder) {
+            logDebug(`전역 정렬 방식 업데이트 요청: ${newSortOrder}`);
+            toggleLoading(true);
 
-        // 데이터 가져오기 함수 
+            try {
+                const formData = new URLSearchParams();
+                formData.append('action', 'updateSortOrder');
+                formData.append('newSortOrder', newSortOrder);
+
+                const response = await fetch(webAppUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP 오류! 상태: ${response.status}, 메시지: ${errorText}`);
+                }
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    logDebug('전역 정렬 방식 서버 업데이트 성공', 'success');
+                    currentSortOrder = newSortOrder; // 클라이언트 상태 업데이트
+                    updateSortToggleButton(); // 버튼 텍스트 업데이트
+                    fetchPosts(false); // 변경된 정렬 방식으로 게시물 목록 새로고침
+                } else {
+                    logDebug(`전역 정렬 방식 서버 업데이트 실패: ${data.message}`, 'error');
+                    showToast(`정렬 방식 변경 실패: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                logDebug(`전역 정렬 방식 업데이트 중 오류 발생: ${error.message}`, 'error');
+                showToast('정렬 방식 업데이트 중 네트워크 오류가 발생했습니다. ' + error.message, 'error');
+            } finally {
+                toggleLoading(false);
+            }
+        }
+        // ⭐⭐ 여기까지 추가 ⭐⭐
+
+        // 데이터 가져오기 함수 (이제 서버에서 globalSortOrder도 받아옴)
         async function fetchPosts(showLoading = false, isInitialLoad = false) { 
             try {
                 if (showLoading) {
@@ -716,19 +787,22 @@
                 
                 if (Array.isArray(rawData.posts)) { 
                     currentViewMode = rawData.globalViewMode || 'list'; 
+                    currentSortOrder = rawData.globalSortOrder || 'latest'; // ⭐⭐ 서버에서 정렬 방식 받아오기 ⭐⭐
                     
                     applyViewMode(); 
+                    updateSortToggleButton(); // ⭐⭐ 버튼 텍스트 초기 업데이트 ⭐⭐
 
-                    const postsToRender = rawData.posts.map((post, index) => {
+                    let postsToRender = rawData.posts.map((post, index) => {
                         return {
                             ...post,
                             Likes: post.Likes || 0,
                             rowIndex: post.rowIndex,
-                            // CardBackgroundColor는 이미 post 객체 안에 포함되어 있을 것임
                         };
                     });
                     
-                    logDebug(`${postsToRender.length}개의 게시물을 가져왔습니다. (현재 보기 방식: ${currentViewMode})`, 'success');
+                    postsToRender = applySorting(postsToRender); // ⭐⭐ 게시물 정렬 적용 ⭐⭐
+
+                    logDebug(`${postsToRender.length}개의 게시물을 가져왔습니다. (현재 보기 방식: ${currentViewMode}, 정렬 방식: ${currentSortOrder})`, 'success');
                     renderPosts(postsToRender);
                     postCount.textContent = `총 ${postsToRender.length}개`;
                 } else {
@@ -774,7 +848,6 @@
             posts.forEach((post, index) => {
                 const postId = post.id || `post-${post.rowIndex || index}`; 
                 const card = document.createElement('div');
-                // CardBackgroundColor를 클래스로 추가
                 const cardBgColorClass = post.CardBackgroundColor ? `bg-${post.CardBackgroundColor}` : 'bg-white';
                 card.className = `card border border-gray-200 rounded-lg p-4 shadow-sm fade-in ${cardBgColorClass}`;
                 card.setAttribute('data-id', postId);
@@ -929,6 +1002,7 @@
                     } else {
                         logDebug(`좋아요 서버 업데이트 실패: ${data.message}`, 'error');
                         showToast(`좋아요 처리 실패: ${data.message}`, 'error');
+                        // 서버에서 실패 시 클라이언트 상태 되돌리기
                         likedPosts[postId] = isCurrentlyLikedByUser;
                         saveLikedPosts();
                         if (isCurrentlyLikedByUser) {
@@ -938,12 +1012,13 @@
                             heartIcon.classList.remove('text-red-500', 'fill-current');
                             heartIcon.setAttribute('stroke-width', '2');
                         }
-                        countSpan.textContent = currentLikes; 
+                        countSpan.textContent = parseInt(countSpan.textContent) - (isCurrentlyLikedByUser ? -1 : 1); // 원래대로 되돌림
                     }
                 })
                 .catch(e => {
                     logDebug(`좋아요 서버 업데이트 중 네트워크 오류 발생: ${e.message}`, 'error');
                     showToast('좋아요 처리 중 네트워크 오류가 발생했습니다.', 'error');
+                    // 네트워크 오류 시 클라이언트 상태 되돌리기
                     likedPosts[postId] = isCurrentlyLikedByUser;
                     saveLikedPosts();
                     if (isCurrentlyLikedByUser) {
@@ -953,7 +1028,7 @@
                         heartIcon.classList.remove('text-red-500', 'fill-current');
                         heartIcon.setAttribute('stroke-width', '2');
                     }
-                    countSpan.textContent = currentLikes; 
+                    countSpan.textContent = parseInt(countSpan.textContent) - (isCurrentlyLikedByUser ? -1 : 1); // 원래대로 되돌림
                 });
 
             } catch (e) {
@@ -1043,7 +1118,6 @@
             
             const formData = new FormData(submissionForm);
             // 폼 데이터에 배경색 추가 (hidden input이 이미 name="cardBackgroundColor"를 가짐)
-            // formData.append('cardBackgroundColor', selectedCardBackgroundColor); // 이 줄은 이제 필요 없음, hidden input이 자동으로 포함됨
             
             fetch(webAppUrl, {
                 method: 'POST',
@@ -1061,7 +1135,7 @@
                     submissionModal.classList.add('hidden');
                     submissionForm.reset();
                     // 배경색 미리보기 및 모달 배경 초기화
-                    colorPreviewCircle.className = 'color-preview-circle bg-white'; 
+                    colorPreviewCircle.className = 'color-preview-circle bg-white ml-2'; // Reset to default
                     submissionModalContent.classList.forEach(cls => {
                         if (cls.startsWith('bg-')) {
                             submissionModalContent.classList.remove(cls);
@@ -1133,8 +1207,8 @@
                         }
                     })
                     .catch(error => {
-                        logDebug(`초기화 중 오류가 발생했습니다: ${error.message}`, 'error'); // Fix: changed 'e' to 'error'
-                        showToast('데이터 초기화 중 오류가 발생했습니다. ' + error.message, 'error'); // Fix: changed 'e' to 'error'
+                        logDebug(`초기화 중 오류가 발생했습니다: ${error.message}`, 'error'); 
+                        showToast('데이터 초기화 중 오류가 발생했습니다. ' + error.message, 'error'); 
                         toggleLoading(false);
                     });
                     
@@ -1157,13 +1231,14 @@
             submissionModal.classList.remove('hidden');
             document.getElementById('name').focus();
             // 모달 열릴 때 기본 색상으로 미리보기 및 선택된 원 설정
-            colorPreviewCircle.className = 'color-preview-circle bg-white';
+            colorPreviewCircle.className = 'color-preview-circle bg-white ml-2'; // Reset to default
             submissionModalContent.classList.forEach(cls => {
                 if (cls.startsWith('bg-')) {
                     submissionModalContent.classList.remove(cls);
                 }
             });
             submissionModalContent.classList.add('bg-white');
+            // 'white' 색상 원을 선택된 상태로 표시
             colorSwatches.forEach(swatch => swatch.classList.remove('selected-swatch'));
             document.querySelector('.color-swatch[data-color="white"]').classList.add('selected-swatch');
             hiddenCardBackgroundColor.value = 'white'; // hidden input 초기화
@@ -1283,21 +1358,15 @@
         });
 
         /* 게시물 배경색 미리보기 및 선택 로직 */
-        // 각 색상 원에 클릭 이벤트 리스너 추가
         colorSwatches.forEach(swatch => {
             swatch.addEventListener('click', (event) => {
                 const selectedColor = event.target.dataset.color; // data-color 속성에서 색상 값 가져옴
 
-                // 모든 색상 원에서 selected-swatch 클래스 제거
                 colorSwatches.forEach(s => s.classList.remove('selected-swatch'));
-                
-                // 클릭된 색상 원에 selected-swatch 클래스 추가
                 event.target.classList.add('selected-swatch');
 
-                // 상단의 큰 미리보기 원 색상 업데이트
                 colorPreviewCircle.className = `color-preview-circle bg-${selectedColor} ml-2`;
                 
-                // 제출 모달의 배경색 업데이트
                 submissionModalContent.classList.forEach(cls => {
                     if (cls.startsWith('bg-')) {
                         submissionModalContent.classList.remove(cls);
@@ -1305,12 +1374,18 @@
                 });
                 submissionModalContent.classList.add(`bg-${selectedColor}`);
 
-                // 숨겨진 input의 값 업데이트
                 hiddenCardBackgroundColor.value = selectedColor;
 
                 logDebug(`게시물 배경색 선택: ${selectedColor}`);
             });
         });
+
+        // ⭐⭐ 새로 추가: 정렬 방식 토글 버튼 클릭 이벤트 ⭐⭐
+        sortToggleBtn.addEventListener('click', () => {
+            const newSortOrder = currentSortOrder === 'latest' ? 'oldest' : 'latest';
+            updateGlobalSortOrder(newSortOrder);
+        });
+        // ⭐⭐ 여기까지 추가 ⭐⭐
 
 
         /* ----- Common Modal Close Logic ----- */

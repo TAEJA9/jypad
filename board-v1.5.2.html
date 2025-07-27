@@ -201,15 +201,40 @@
             background: #555;
         }
 
-        /* Custom style for color preview circle */
+        /* Custom style for color preview circle at the top */
         .color-preview-circle {
-            width: 24px;
+            width: 24px; /* Larger preview circle */
             height: 24px;
             border-radius: 50%;
             border: 1px solid #ccc;
             margin-right: 8px;
             display: inline-block;
             vertical-align: middle;
+            flex-shrink: 0; /* Ensure it doesn't shrink in flex context */
+        }
+
+        /* Styles for individual color selection swatches */
+        .color-swatch {
+            width: 32px; /* 원의 크기 */
+            height: 32px;
+            border-radius: 50%;
+            border: 1px solid #ccc;
+            cursor: pointer;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.1); /* Subtle border for all swatches */
+            transition: all 0.15s ease-in-out;
+            display: inline-block; /* Flex item behavior */
+            flex-shrink: 0; /* Don't shrink */
+        }
+
+        .color-swatch:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 0 2px #a0aec0; /* Hover effect */
+        }
+
+        .selected-swatch {
+            border: 3px solid #3b82f6; /* 선택된 원의 파란색 테두리 */
+            box-shadow: 0 0 0 3px #bfdbfe; /* 바깥쪽 빛나는 효과 */
+            transform: scale(1.05);
         }
     </style>
 </head>
@@ -222,6 +247,12 @@
     </div>
 
     <div id="toast-container"></div>
+
+    <!-- Tailwind CSS JIT compiler hint: Include all dynamically used classes -->
+    <!-- 이 보이지 않는 div는 Tailwind JIT 컴파일러가 아래 배경색 클래스들을 CSS에 포함하도록 강제합니다. -->
+    <div class="hidden">
+        <div class="bg-white bg-blue-50 bg-green-50 bg-yellow-50 bg-red-50 bg-purple-50 bg-pink-50 bg-indigo-50"></div>
+    </div>
 
     <!-- Admin Modal - Only for Data Reset -->
     <div id="admin-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-40 hidden">
@@ -296,47 +327,25 @@
                     <input type="text" id="url" name="url" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://">
                 </div>
                 
-                <!-- ⭐⭐ 새로 추가: 게시물 배경색 선택 섹션 ⭐⭐ -->
+                <!-- 게시물 배경색 선택 섹션 (수정됨) -->
                 <div class="mb-6">
                     <label class="block text-sm font-medium text-gray-700 mb-2">게시물 배경색 선택 (미리보기): 
                         <span id="color-preview-circle" class="color-preview-circle bg-white ml-2"></span>
                     </label>
-                    <div class="grid grid-cols-4 gap-2">
-                        <label class="flex items-center text-sm text-gray-700 cursor-pointer p-2 rounded-md hover:bg-gray-100 transition">
-                            <input type="radio" name="cardBackgroundColor" value="white" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 mr-1" checked>
-                            흰색
-                        </label>
-                        <label class="flex items-center text-sm text-gray-700 cursor-pointer p-2 rounded-md hover:bg-blue-50 transition">
-                            <input type="radio" name="cardBackgroundColor" value="blue-50" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 mr-1">
-                            파랑
-                        </label>
-                        <label class="flex items-center text-sm text-gray-700 cursor-pointer p-2 rounded-md hover:bg-green-50 transition">
-                            <input type="radio" name="cardBackgroundColor" value="green-50" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 mr-1">
-                            초록
-                        </label>
-                        <label class="flex items-center text-sm text-gray-700 cursor-pointer p-2 rounded-md hover:bg-yellow-50 transition">
-                            <input type="radio" name="cardBackgroundColor" value="yellow-50" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 mr-1">
-                            노랑
-                        </label>
-                        <label class="flex items-center text-sm text-gray-700 cursor-pointer p-2 rounded-md hover:bg-red-50 transition">
-                            <input type="radio" name="cardBackgroundColor" value="red-50" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 mr-1">
-                            빨강
-                        </label>
-                        <label class="flex items-center text-sm text-gray-700 cursor-pointer p-2 rounded-md hover:bg-purple-50 transition">
-                            <input type="radio" name="cardBackgroundColor" value="purple-50" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 mr-1">
-                            보라
-                        </label>
-                        <label class="flex items-center text-sm text-gray-700 cursor-pointer p-2 rounded-md hover:bg-pink-50 transition">
-                            <input type="radio" name="cardBackgroundColor" value="pink-50" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 mr-1">
-                            분홍
-                        </label>
-                        <label class="flex items-center text-sm text-gray-700 cursor-pointer p-2 rounded-md hover:bg-indigo-50 transition">
-                            <input type="radio" name="cardBackgroundColor" value="indigo-50" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 mr-1">
-                            남색
-                        </label>
+                    <div id="color-selection-container" class="flex flex-wrap justify-around gap-3">
+                        <span class="color-swatch bg-white selected-swatch" data-color="white" title="흰색"></span>
+                        <span class="color-swatch bg-blue-50" data-color="blue-50" title="파랑"></span>
+                        <span class="color-swatch bg-green-50" data-color="green-50" title="초록"></span>
+                        <span class="color-swatch bg-yellow-50" data-color="yellow-50" title="노랑"></span>
+                        <span class="color-swatch bg-red-50" data-color="red-50" title="빨강"></span>
+                        <span class="color-swatch bg-purple-50" data-color="purple-50" title="보라"></span>
+                        <span class="color-swatch bg-pink-50" data-color="pink-50" title="분홍"></span>
+                        <span class="color-swatch bg-indigo-50" data-color="indigo-50" title="남색"></span>
                     </div>
+                    <!-- 선택된 색상 값을 저장할 hidden input -->
+                    <input type="hidden" name="cardBackgroundColor" id="hiddenCardBackgroundColor" value="white">
                 </div>
-                <!-- ⭐⭐ 여기까지 추가 ⭐⭐ -->
+                <!-- 게시물 배경색 선택 섹션 끝 -->
 
                 <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition flex items-center justify-center">
                     <span>제출하기</span>
@@ -348,9 +357,8 @@
     <!-- Debug Modal - Existing -->
     <div id="debug-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-40 hidden">
         <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-4xl modal-enter">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-bold text-gray-800">디버그 정보</h3>
-                <button id="close-debug" class="text-gray-500 hover:text-gray-700">
+            <h3 class="text-xl font-bold text-gray-800">디버그 정보</h3>
+            <button id="close-debug" class="text-gray-500 hover:text-gray-700">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
@@ -495,11 +503,12 @@
         const saveViewModeBtn = document.getElementById('save-view-mode');
         const closeViewModeSelectorBtn = document.getElementById('close-view-mode-selector');
 
-        // ⭐⭐ 새로 추가: 게시물 배경색 관련 DOM 요소 ⭐⭐
-        const colorPreviewCircle = document.getElementById('color-preview-circle');
-        const cardBackgroundColorRadios = document.querySelectorAll('input[name="cardBackgroundColor"]');
-        const submissionModalContent = document.getElementById('submission-modal-content'); // 미리보기 적용 대상
-        // ⭐⭐ 여기까지 추가 ⭐⭐
+        // 게시물 배경색 관련 DOM 요소
+        const colorPreviewCircle = document.getElementById('color-preview-circle'); // 큰 미리보기 원
+        const colorSelectionContainer = document.getElementById('color-selection-container'); // 색상 원들을 감싸는 컨테이너
+        const colorSwatches = document.querySelectorAll('.color-swatch'); // 개별 색상 원들
+        const submissionModalContent = document.getElementById('submission-modal-content'); // 미리보기 적용 대상 (모달 배경)
+        const hiddenCardBackgroundColor = document.getElementById('hiddenCardBackgroundColor'); // 숨겨진 input
 
 
         // 디버그 로그 함수
@@ -672,7 +681,7 @@
         }
 
 
-        // 데이터 가져오기 함수 (이제 globalBackgroundColor는 필요 없음)
+        // 데이터 가져오기 함수 
         async function fetchPosts(showLoading = false, isInitialLoad = false) { 
             try {
                 if (showLoading) {
@@ -707,10 +716,8 @@
                 
                 if (Array.isArray(rawData.posts)) { 
                     currentViewMode = rawData.globalViewMode || 'list'; 
-                    // ⭐⭐ globalBackgroundColor는 이제 서버에서 받지 않음 ⭐⭐
                     
                     applyViewMode(); 
-                    // applyBackgroundColor() 호출 제거
 
                     const postsToRender = rawData.posts.map((post, index) => {
                         return {
@@ -767,7 +774,7 @@
             posts.forEach((post, index) => {
                 const postId = post.id || `post-${post.rowIndex || index}`; 
                 const card = document.createElement('div');
-                // ⭐⭐ CardBackgroundColor를 클래스로 추가 ⭐⭐
+                // CardBackgroundColor를 클래스로 추가
                 const cardBgColorClass = post.CardBackgroundColor ? `bg-${post.CardBackgroundColor}` : 'bg-white';
                 card.className = `card border border-gray-200 rounded-lg p-4 shadow-sm fade-in ${cardBgColorClass}`;
                 card.setAttribute('data-id', postId);
@@ -1007,8 +1014,8 @@
             const nameInput = document.getElementById('name');
             const questionInput = document.getElementById('question');
             const urlInput = document.getElementById('url');
-            // ⭐⭐ 새로 추가: 선택된 게시물 배경색 가져오기 ⭐⭐
-            const selectedCardBackgroundColor = document.querySelector('input[name="cardBackgroundColor"]:checked')?.value || 'white';
+            // 선택된 게시물 배경색 가져오기 (hidden input에서 값 가져옴)
+            const selectedCardBackgroundColor = hiddenCardBackgroundColor.value || 'white'; 
 
             let urlValue = urlInput.value.trim();
             if (urlValue) {
@@ -1035,8 +1042,8 @@
             logDebug('질문 제출 시작...');
             
             const formData = new FormData(submissionForm);
-            // ⭐⭐ 새로 추가: 폼 데이터에 배경색 추가 ⭐⭐
-            formData.append('cardBackgroundColor', selectedCardBackgroundColor);
+            // 폼 데이터에 배경색 추가 (hidden input이 이미 name="cardBackgroundColor"를 가짐)
+            // formData.append('cardBackgroundColor', selectedCardBackgroundColor); // 이 줄은 이제 필요 없음, hidden input이 자동으로 포함됨
             
             fetch(webAppUrl, {
                 method: 'POST',
@@ -1053,11 +1060,18 @@
                     logDebug('폼 제출 완료, 응답 받음');
                     submissionModal.classList.add('hidden');
                     submissionForm.reset();
-                    // ⭐⭐ 배경색 미리보기 초기화 ⭐⭐
+                    // 배경색 미리보기 및 모달 배경 초기화
                     colorPreviewCircle.className = 'color-preview-circle bg-white'; 
-                    // ⭐⭐ 미리보기 모달 배경도 초기화 (옵션) ⭐⭐
-                    submissionModalContent.className = 'bg-white p-6 rounded-lg shadow-lg w-full max-w-md modal-enter';
-                    document.querySelector('input[name="cardBackgroundColor"][value="white"]').checked = true;
+                    submissionModalContent.classList.forEach(cls => {
+                        if (cls.startsWith('bg-')) {
+                            submissionModalContent.classList.remove(cls);
+                        }
+                    });
+                    submissionModalContent.classList.add('bg-white'); 
+                    // 선택된 색상 원도 흰색으로 초기화
+                    colorSwatches.forEach(swatch => swatch.classList.remove('selected-swatch'));
+                    document.querySelector('.color-swatch[data-color="white"]').classList.add('selected-swatch');
+                    hiddenCardBackgroundColor.value = 'white';
 
 
                     showToast('질문이 성공적으로 등록되었습니다.', 'success');
@@ -1119,8 +1133,8 @@
                         }
                     })
                     .catch(error => {
-                        logDebug(`초기화 중 오류가 발생했습니다: ${error.message}`, 'error');
-                        showToast('데이터 초기화 중 오류가 발생했습니다. ' + error.message, 'error');
+                        logDebug(`초기화 중 오류가 발생했습니다: ${error.message}`, 'error'); // Fix: changed 'e' to 'error'
+                        showToast('데이터 초기화 중 오류가 발생했습니다. ' + error.message, 'error'); // Fix: changed 'e' to 'error'
                         toggleLoading(false);
                     });
                     
@@ -1142,13 +1156,17 @@
         addQuestionBtn.addEventListener('click', () => {
             submissionModal.classList.remove('hidden');
             document.getElementById('name').focus();
-            // 모달 열릴 때 기본 색상으로 미리보기 설정
-            const defaultColorRadio = document.querySelector('input[name="cardBackgroundColor"][value="white"]');
-            if (defaultColorRadio) {
-                defaultColorRadio.checked = true;
-                colorPreviewCircle.className = 'color-preview-circle bg-white';
-                submissionModalContent.className = 'bg-white p-6 rounded-lg shadow-lg w-full max-w-md modal-enter';
-            }
+            // 모달 열릴 때 기본 색상으로 미리보기 및 선택된 원 설정
+            colorPreviewCircle.className = 'color-preview-circle bg-white';
+            submissionModalContent.classList.forEach(cls => {
+                if (cls.startsWith('bg-')) {
+                    submissionModalContent.classList.remove(cls);
+                }
+            });
+            submissionModalContent.classList.add('bg-white');
+            colorSwatches.forEach(swatch => swatch.classList.remove('selected-swatch'));
+            document.querySelector('.color-swatch[data-color="white"]').classList.add('selected-swatch');
+            hiddenCardBackgroundColor.value = 'white'; // hidden input 초기화
         });
 
         // Close submission modal
@@ -1264,17 +1282,35 @@
             viewModeSelectorModal.classList.add('hidden');
         });
 
-        /* ⭐⭐ 새로 추가: 게시물 배경색 미리보기 및 선택 로직 ⭐⭐ */
-        cardBackgroundColorRadios.forEach(radio => {
-            radio.addEventListener('change', (event) => {
-                const selectedColor = event.target.value;
-                // 미리보기 원형 색상 업데이트
-                colorPreviewCircle.className = `color-preview-circle bg-${selectedColor}`;
-                // 제출 모달의 배경색 업데이트 (선택 사항, 사용자 경험 개선)
-                submissionModalContent.className = `bg-${selectedColor} p-6 rounded-lg shadow-lg w-full max-w-md modal-enter`;
+        /* 게시물 배경색 미리보기 및 선택 로직 */
+        // 각 색상 원에 클릭 이벤트 리스너 추가
+        colorSwatches.forEach(swatch => {
+            swatch.addEventListener('click', (event) => {
+                const selectedColor = event.target.dataset.color; // data-color 속성에서 색상 값 가져옴
+
+                // 모든 색상 원에서 selected-swatch 클래스 제거
+                colorSwatches.forEach(s => s.classList.remove('selected-swatch'));
+                
+                // 클릭된 색상 원에 selected-swatch 클래스 추가
+                event.target.classList.add('selected-swatch');
+
+                // 상단의 큰 미리보기 원 색상 업데이트
+                colorPreviewCircle.className = `color-preview-circle bg-${selectedColor} ml-2`;
+                
+                // 제출 모달의 배경색 업데이트
+                submissionModalContent.classList.forEach(cls => {
+                    if (cls.startsWith('bg-')) {
+                        submissionModalContent.classList.remove(cls);
+                    }
+                });
+                submissionModalContent.classList.add(`bg-${selectedColor}`);
+
+                // 숨겨진 input의 값 업데이트
+                hiddenCardBackgroundColor.value = selectedColor;
+
+                logDebug(`게시물 배경색 선택: ${selectedColor}`);
             });
         });
-        /* ⭐⭐ 여기까지 추가 ⭐⭐ */
 
 
         /* ----- Common Modal Close Logic ----- */

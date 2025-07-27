@@ -3,919 +3,239 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>질문 게시판</title>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <title>게시판 프로젝트 - 포트폴리오</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'Noto Sans KR', sans-serif;
-            background-color: #f8fafc;
+            font-family: 'Inter', sans-serif;
         }
-
-        .card {
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card-hover {
             transition: all 0.3s ease;
         }
-
-        .highlight {
-            animation: highlight 2s ease;
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
         }
-
-        @keyframes highlight {
-            0% { background-color: rgba(147, 197, 253, 0.5); }
-            100% { background-color: white; }
+        .tech-badge {
+            background: linear-gradient(45deg, #f093fb 0%, #f5576c 100%);
         }
-
-        .shake {
-            animation: shake 0.5s ease-in-out;
+        .feature-icon {
+            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
         }
-
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            20%, 60% { transform: translateX(-5px); }
-            40%, 80% { transform: translateX(5px); }
+        .scroll-smooth {
+            scroll-behavior: smooth;
         }
-
-        .fade-in {
-            animation: fadeIn 0.5s ease;
+        .animate-fade-in {
+            animation: fadeIn 0.8s ease-in-out;
         }
-
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        .loader {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #3498db;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .toast {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 12px 24px;
-            border-radius: 4px;
-            z-index: 1000;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            animation: slideIn 0.3s, fadeOut 0.5s 2.5s;
-            animation-fill-mode: forwards;
-        }
-
-        @keyframes slideIn {
-            from { transform: translateY(-100%); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        @keyframes fadeOut {
-            from { opacity: 1; }
-            to { opacity: 0; visibility: hidden; }
-        }
-        
-        .modal-enter {
-            animation: modalEnter 0.3s ease forwards;
-        }
-        
-        @keyframes modalEnter {
-            from { opacity: 0; transform: translateY(-20px); }
+            from { opacity: 0; transform: translateY(30px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        
-        .refresh-spin {
-            animation: refreshSpin 1s linear;
+        .animate-slide-in {
+            animation: slideIn 1s ease-out;
         }
-        
-        @keyframes refreshSpin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        
-        .heart-button {
-            transition: transform 0.2s ease;
-        }
-        
-        .heart-button:hover {
-            transform: scale(1.1);
-        }
-        
-        .heart-button:active {
-            transform: scale(0.9);
-        }
-        
-        .heart-animation {
-            animation: heartBeat 0.5s ease-in-out;
-        }
-        
-        @keyframes heartBeat {
-            0% { transform: scale(1); }
-            25% { transform: scale(1.2); }
-            50% { transform: scale(0.95); }
-            75% { transform: scale(1.1); }
-            100% { transform: scale(1); }
-        }
-        
-        .link-preview {
-            border-left: 4px solid #e2e8f0;
-            transition: all 0.2s ease;
-        }
-        
-        .link-preview:hover {
-            border-left-color: #3b82f6;
-            background-color: #f8fafc;
-        }
-        
-        .copyright {
-            font-size: 0.85rem;
-            color: #6b7280;
-            display: inline-flex;
-            align-items: center;
-            margin-left: 12px;
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-50px); }
+            to { opacity: 1; transform: translateX(0); }
         }
     </style>
 </head>
-<body class="min-h-screen">
-    <div id="loading-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 hidden">
-        <div class="bg-white p-5 rounded-lg flex flex-col items-center">
-            <div class="loader mb-3"></div>
-            <p class="text-gray-700">처리 중입니다...</p>
-        </div>
-    </div>
-
-    <div id="toast-container"></div>
-
-    <div id="admin-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-40 hidden">
-        <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md modal-enter">
-            <h3 class="text-xl font-bold mb-4 text-gray-800">관리자 인증</h3>
-            <div id="password-container">
-                <label for="admin-password" class="block text-sm font-medium text-gray-700 mb-2">비밀번호를 입력하세요</label>
-                <input type="password" id="admin-password" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4">
-                <div class="flex justify-end space-x-3">
-                    <button id="cancel-admin" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition">취소</button>
-                    <button id="verify-admin" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">확인</button>
-                </div>
-            </div>
-            <div id="admin-controls" class="hidden">
-                <p class="mb-4 text-gray-700">관리자 인증이 완료되었습니다.</p>
-                <div class="flex justify-between">
-                    <button id="reset-data" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition">모든 데이터 초기화</button>
-                    <button id="close-admin" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition">닫기</button>
-                </div>
+<body class="bg-gray-50 text-gray-800 scroll-smooth">
+    <!-- Header -->
+    <header class="gradient-bg text-white py-20 px-4">
+        <div class="max-w-6xl mx-auto text-center animate-fade-in">
+            <h1 class="text-5xl md:text-6xl font-bold mb-6">게시판 프로젝트</h1>
+            <p class="text-xl md:text-2xl font-light opacity-90 mb-8">사용자 친화적인 실시간 소통 플랫폼</p>
+            <div class="inline-flex items-center bg-white/20 backdrop-blur-sm rounded-full px-6 py-3">
+                <span class="text-sm font-medium">서버리스 아키텍처 • 반응형 디자인 • 실시간 업데이트</span>
             </div>
         </div>
-    </div>
+    </header>
 
-    <div id="submission-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-40 hidden">
-        <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md modal-enter">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-bold text-gray-800">새 질문 등록</h3>
-                <button id="close-submission" class="text-gray-500 hover:text-gray-700">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-4 py-16">
+        <!-- Project Introduction -->
+        <section class="mb-20 animate-slide-in">
+            <div class="bg-white rounded-2xl shadow-lg p-8 md:p-12 card-hover">
+                <div class="flex items-center mb-6">
+                    <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mr-4">
+                        <span class="text-2xl">✨</span>
+                    </div>
+                    <h2 class="text-3xl font-bold text-gray-800">게시판 소개</h2>
+                </div>
+                <p class="text-lg text-gray-600 leading-relaxed mb-6">
+                    이 게시판은 간단한 질문 및 답변, 공지사항 공유 등 다양한 소통을 목적으로 제작되었습니다. 사용자 친화적인 인터페이스를 제공하여 누구나 쉽게 게시물을 작성하고 열람할 수 있습니다. 개인 학습 프로젝트, 소규모 팀의 아이디어 공유 공간 등 다양한 용도로 활용될 수 있습니다.
+                </p>
+                <p class="text-lg text-gray-600 leading-relaxed">
+                    실시간으로 업데이트되는 게시물 목록을 통해 중요한 정보를 놓치지 않고 확인할 수 있으며, 간편한 좋아요 기능으로 게시물에 대한 반응을 표시할 수 있습니다.
+                </p>
             </div>
-            <form id="submission-form" action="YOUR_GOOGLE_APP_SCRIPT_URL_HERE" method="POST">
-                <input type="hidden" name="action" value="submit">
-                <div class="mb-4">
-                    <label for="name" class="block text-sm font-medium text-gray-700 mb-1">이름 *</label>
-                    <input type="text" id="name" name="name" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-                <div class="mb-4">
-                    <label for="question" class="block text-sm font-medium text-gray-700 mb-1">질문 또는 메시지 *</label>
-                    <textarea id="question" name="question" rows="4" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
-                </div>
-                <div class="mb-6">
-                    <label for="url" class="block text-sm font-medium text-gray-700 mb-1">관련 URL (선택사항)</label>
-                    <input type="text" id="url" name="url" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://">
-                </div>
-                <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition flex items-center justify-center">
-                    <span>제출하기</span>
-                </button>
-            </form>
-        </div>
-    </div>
+        </section>
 
-    <div id="debug-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-40 hidden">
-        <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-4xl modal-enter">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-bold text-gray-800">디버그 정보</h3>
-                <button id="close-debug" class="text-gray-500 hover:text-gray-700">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-            <div class="overflow-auto max-h-[70vh]">
-                <div class="mb-4">
-                    <h4 class="font-medium text-gray-700 mb-2">마지막 응답 데이터:</h4>
-                    <pre id="debug-response" class="bg-gray-100 p-3 rounded-md text-sm overflow-auto max-h-40"></pre>
-                </div>
-                <div class="mb-4">
-                    <h4 class="font-medium text-gray-700 mb-2">로컬 저장 데이터:</h4>
-                    <pre id="debug-local" class="bg-gray-100 p-3 rounded-md text-sm overflow-auto max-h-40"></pre>
-                </div>
-                <div>
-                    <h4 class="font-medium text-gray-700 mb-2">로그:</h4>
-                    <div id="debug-log" class="bg-gray-100 p-3 rounded-md text-sm overflow-auto max-h-40"></div>
+        <!-- Key Features -->
+        <section class="mb-20">
+            <div class="text-center mb-12">
+                <div class="flex items-center justify-center mb-4">
+                    <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center mr-4">
+                        <span class="text-2xl">🚀</span>
+                    </div>
+                    <h2 class="text-3xl font-bold text-gray-800">주요 기능</h2>
                 </div>
             </div>
-            <div class="mt-4 flex justify-end">
-                <button id="clear-debug-log" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition mr-2">로그 지우기</button>
-                <button id="close-debug-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">닫기</button>
-            </div>
-        </div>
-    </div>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover animate-fade-in">
+                    <div class="feature-icon w-12 h-12 rounded-lg flex items-center justify-center mb-4">
+                        <span class="text-white text-xl">📝</span>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3 text-gray-800">질문/메시지 등록</h3>
+                    <p class="text-gray-600">이름과 질문 내용을 입력하여 쉽고 빠르게 게시물을 올릴 수 있습니다. 선택적으로 관련 URL도 첨부 가능합니다.</p>
+                </div>
 
-    <div class="container mx-auto px-4 py-8 max-w-6xl">
-        <header class="mb-8">
-            <div class="flex justify-between items-center mb-6">
-                <div class="flex items-center">
-                    <h1 class="text-3xl font-bold text-gray-800">질문 게시판</h1>
-                    <span class="copyright">ⓒ 2025. Jeongyeon</span>
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover animate-fade-in">
+                    <div class="feature-icon w-12 h-12 rounded-lg flex items-center justify-center mb-4">
+                        <span class="text-white text-xl">🎨</span>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3 text-gray-800">게시물 배경색 선택</h3>
+                    <p class="text-gray-600">게시물 작성 시 8가지 색상 중 원하는 배경색을 선택하여 시각적으로 강조할 수 있습니다.</p>
                 </div>
-                <div class="flex items-center space-x-3">
-                    <span id="current-date" class="text-sm bg-gray-100 text-gray-700 py-1 px-3 rounded-full"></span>
-                    <button id="debug-btn" class="px-3 py-1 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition text-sm hidden">디버그</button>
-                    <button id="admin-btn" class="px-3 py-1 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition text-sm">관리자</button>
+
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover animate-fade-in">
+                    <div class="feature-icon w-12 h-12 rounded-lg flex items-center justify-center mb-4">
+                        <span class="text-white text-xl">👍</span>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3 text-gray-800">좋아요 (Like) 기능</h3>
+                    <p class="text-gray-600">각 게시물에 좋아요를 눌러 공감하거나 지지하는 마음을 표현할 수 있으며, 한 게시물에 한 번만 좋아요를 누를 수 있습니다.</p>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover animate-fade-in">
+                    <div class="feature-icon w-12 h-12 rounded-lg flex items-center justify-center mb-4">
+                        <span class="text-white text-xl">📱</span>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3 text-gray-800">다양한 보기 방식</h3>
+                    <p class="text-gray-600">게시물을 '목록형', '담벼락형(그리드)', '타임라인형(가로 스크롤)' 중 원하는 형태로 전환하여 볼 수 있습니다.</p>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover animate-fade-in">
+                    <div class="feature-icon w-12 h-12 rounded-lg flex items-center justify-center mb-4">
+                        <span class="text-white text-xl">🔄</span>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3 text-gray-800">게시물 정렬</h3>
+                    <p class="text-gray-600">최신순 또는 과거순으로 게시물을 정렬하여 볼 수 있으며, 이 또한 모든 사용자에게 전역적으로 적용됩니다.</p>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover animate-fade-in">
+                    <div class="feature-icon w-12 h-12 rounded-lg flex items-center justify-center mb-4">
+                        <span class="text-white text-xl">⚡</span>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3 text-gray-800">실시간 업데이트</h3>
+                    <p class="text-gray-600">새로운 게시물 등록, 좋아요, 삭제 등 모든 변경사항이 페이지 새로고침 없이 실시간으로 반영됩니다.</p>
                 </div>
             </div>
-            <div class="h-1 w-full bg-gradient-to-r from-blue-400 to-green-400 rounded-full"></div>
-        </header>
+        </section>
 
-        <div class="bg-white p-6 rounded-lg shadow-md">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-semibold text-gray-800">질문 목록</h2>
-                <div class="flex items-center space-x-3">
-                    <span id="post-count" class="text-sm bg-blue-100 text-blue-800 py-1 px-3 rounded-full">총 0개</span>
-                    <button id="refresh-btn" class="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition" title="새로고침">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" id="refresh-icon">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
+        <!-- Tech Stack -->
+        <section class="mb-20">
+            <div class="bg-white rounded-2xl shadow-lg p-8 md:p-12 card-hover">
+                <div class="flex items-center mb-8">
+                    <div class="w-12 h-12 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center mr-4">
+                        <span class="text-2xl">💡</span>
+                    </div>
+                    <h2 class="text-3xl font-bold text-gray-800">기술 스택</h2>
+                </div>
+                
+                <p class="text-lg text-gray-600 leading-relaxed mb-8">
+                    이 게시판은 서버리스 아키텍처를 기반으로 구축되었습니다. 복잡한 서버 구축 없이 Google의 서비스를 활용하여 빠르고 효율적인 개발이 가능했습니다.
+                </p>
+
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-xl font-semibold mb-4 text-gray-800">프론트엔드 (Front-end)</h3>
+                        <div class="flex flex-wrap gap-3">
+                            <span class="tech-badge text-white px-4 py-2 rounded-full text-sm font-medium">HTML5</span>
+                            <span class="tech-badge text-white px-4 py-2 rounded-full text-sm font-medium">CSS3</span>
+                            <span class="tech-badge text-white px-4 py-2 rounded-full text-sm font-medium">Tailwind CSS</span>
+                            <span class="tech-badge text-white px-4 py-2 rounded-full text-sm font-medium">JavaScript</span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-xl font-semibold mb-4 text-gray-800">백엔드/데이터베이스</h3>
+                        <div class="flex flex-wrap gap-3">
+                            <span class="tech-badge text-white px-4 py-2 rounded-full text-sm font-medium">Google Sheets</span>
+                            <span class="tech-badge text-white px-4 py-2 rounded-full text-sm font-medium">Google Apps Script</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8">
+                    <h3 class="text-xl font-semibold mb-4 text-gray-800">주요 기능 구현</h3>
+                    <div class="flex flex-wrap gap-3">
+                        <span class="bg-gray-100 text-gray-700 px-4 py-2 rounded-full text-sm font-medium">Fetch API (비동기 통신)</span>
+                        <span class="bg-gray-100 text-gray-700 px-4 py-2 rounded-full text-sm font-medium">DOM 조작</span>
+                        <span class="bg-gray-100 text-gray-700 px-4 py-2 rounded-full text-sm font-medium">이벤트 리스너</span>
+                        <span class="bg-gray-100 text-gray-700 px-4 py-2 rounded-full text-sm font-medium">CSS Grid/Flexbox</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Action Buttons -->
+        <section class="text-center">
+            <div class="bg-white rounded-2xl shadow-lg p-8 md:p-12 card-hover">
+                <h2 class="text-2xl font-bold text-gray-800 mb-8">프로젝트 확인하기</h2>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                    <button onclick="window.open('https://taeja9.github.io/jypad/board-v1.6.html', '_blank')" class="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-4 px-8 rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg">
+                        게시판으로 이동하기
                     </button>
-                    <button id="add-question-btn" class="p-2 bg-blue-500 rounded-full hover:bg-blue-600 transition" title="새 질문 등록">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    <button onclick="window.open('https://github.com/taeja9/jypad', '_blank')" class="bg-gray-800 hover:bg-gray-900 text-white font-semibold py-4 px-8 rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 0C4.477 0 0 4.484 0 10.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0110 4.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.203 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.942.359.31.678.921.678 1.856 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0020 10.017C20 4.484 15.522 0 10 0z" clip-rule="evenodd"></path>
                         </svg>
+                        GitHub Repository
                     </button>
                 </div>
             </div>
-            <div id="posts-container" class="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
-                <div class="flex items-center justify-center py-12 text-gray-500">
-                    <div class="loader mr-3"></div>
-                    <p>질문을 불러오는 중입니다...</p>
-                </div>
-            </div>
-        </div>
-    </div>
+        </section>
+    </main>
 
-    <div id="submission-success" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-40 hidden">
-        <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md modal-enter">
-            <div class="flex flex-col items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-green-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
-                <h3 class="text-xl font-bold mb-2 text-gray-800">질문이 등록되었습니다!</h3>
-                <p class="text-gray-600 text-center mb-6">질문이 성공적으로 등록되었습니다. 목록에서 확인하실 수 있습니다.</p>
-                <button id="back-to-list" class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">목록으로 돌아가기</button>
-            </div>
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-12 px-4 mt-20">
+        <div class="max-w-6xl mx-auto text-center">
+            <p class="text-gray-400">&copy; 2025 M.I.O Project. All rights reserved.</p>
         </div>
-    </div>
+    </footer>
 
     <script>
-        // 웹앱 URL 설정
-        // IMPORTANT: Replace this with your actual Google Apps Script Web App URL
-        const webAppUrl = 'https://script.google.com/macros/s/AKfycbweHecke6fhTE1Nb2BcWFLvsgjdPRuejfaVk_3y9sjJvVoLUypF-w8giHKjiaGcfnzq/exec'; // 여기에 여러분의 구글 앱스 스크립트 웹 앱 URL을 붙여넣으세요!
-
-        // 디버그 모드 설정
-        const DEBUG_MODE = true;
-        
-        // 디버그 로그 배열
-        let debugLogs = [];
-        let lastResponseData = null;
-        
-        // DOM 요소
-        const submissionForm = document.getElementById('submission-form');
-        const submissionModal = document.getElementById('submission-modal');
-        const submissionSuccess = document.getElementById('submission-success'); 
-        const addQuestionBtn = document.getElementById('add-question-btn');
-        const closeSubmissionBtn = document.getElementById('close-submission');
-        const postsContainer = document.getElementById('posts-container');
-        const postCount = document.getElementById('post-count');
-        const refreshBtn = document.getElementById('refresh-btn');
-        const refreshIcon = document.getElementById('refresh-icon');
-        const adminBtn = document.getElementById('admin-btn');
-        const adminModal = document.getElementById('admin-modal');
-        const passwordContainer = document.getElementById('password-container');
-        const adminControls = document.getElementById('admin-controls');
-        const adminPassword = document.getElementById('admin-password');
-        const verifyAdminBtn = document.getElementById('verify-admin');
-        const cancelAdminBtn = document.getElementById('cancel-admin');
-        const resetDataBtn = document.getElementById('reset-data');
-        const closeAdminBtn = document.getElementById('close-admin');
-        const loadingOverlay = document.getElementById('loading-overlay');
-        const toastContainer = document.getElementById('toast-container');
-        const currentDateElement = document.getElementById('current-date');
-        const debugBtn = document.getElementById('debug-btn'); // 디버그 버튼
-        const debugModal = document.getElementById('debug-modal');
-        const closeDebugBtn = document.getElementById('close-debug');
-        const closeDebugBtnBottom = document.getElementById('close-debug-btn');
-        const clearDebugLogBtn = document.getElementById('clear-debug-log');
-        const debugResponseEl = document.getElementById('debug-response');
-        const debugLocalEl = document.getElementById('debug-local');
-        const debugLogEl = document.getElementById('debug-log');
-
-        // 디버그 모드 활성화 (디버그 버튼의 초기 가시성은 이제 관리자 인증에 의해 결정됨)
-        // if (DEBUG_MODE) {
-        //     debugBtn.classList.remove('hidden'); // 이 줄을 제거하여 초기에는 숨김
-        // }
-
-        // 디버그 로그 함수
-        function logDebug(message, type = 'info') {
-            const timestamp = new Date().toLocaleTimeString();
-            const logEntry = {
-                time: timestamp,
-                message: typeof message === 'object' ? JSON.stringify(message) : message,
-                type
-            };
-            
-            debugLogs.push(logEntry);
-            
-            if (debugLogEl) {
-                const logItem = document.createElement('div');
-                logItem.className = `mb-1 ${type === 'error' ? 'text-red-600' : type === 'success' ? 'text-green-600' : 'text-gray-700'}`;
-                logItem.innerHTML = `<span class="text-gray-500">[${timestamp}]</span> ${logEntry.message}`;
-                debugLogEl.appendChild(logItem);
-                debugLogEl.scrollTop = debugLogEl.scrollHeight;
-            }
-            
-            if (type === 'error') {
-                console.error(`[${timestamp}] ${message}`);
-            } else {
-                console.log(`[${timestamp}] ${message}`);
-            }
-        }
-
-        // 디버그 정보 업데이트
-        function updateDebugInfo() {
-            if (lastResponseData) {
-                debugResponseEl.textContent = JSON.stringify(lastResponseData, null, 2);
-            } else {
-                debugResponseEl.textContent = '아직 응답 데이터가 없습니다.';
-            }
-            
-            debugLocalEl.textContent = JSON.stringify({
-                likedPosts,
-                localStorage: { ...localStorage }
-            }, null, 2);
-        }
-
-        // 좋아요 상태 관리
-        let likedPosts = {};
-        
-        // 로컬 스토리지에서 좋아요 상태 불러오기
-        function loadLikedPosts() {
-            const saved = localStorage.getItem('likedPosts');
-            if (saved) {
-                try {
-                    likedPosts = JSON.parse(saved);
-                    logDebug('좋아요 상태를 로컬 스토리지에서 불러왔습니다.');
-                } catch (e) {
-                    likedPosts = {};
-                    logDebug('좋아요 상태 파싱 중 오류가 발생했습니다: ' + e.message, 'error');
+        // Smooth scrolling and animation on scroll
+        window.addEventListener('scroll', () => {
+            const elements = document.querySelectorAll('.animate-fade-in');
+            elements.forEach(element => {
+                const elementTop = element.getBoundingClientRect().top;
+                const elementVisible = 150;
+                
+                if (elementTop < window.innerHeight - elementVisible) {
+                    element.style.opacity = '1';
+                    element.style.transform = 'translateY(0)';
                 }
-            }
-        }
-        
-        // 좋아요 상태 저장
-        function saveLikedPosts() {
-            localStorage.setItem('likedPosts', JSON.stringify(likedPosts));
-            logDebug('좋아요 상태를 로컬 스토리지에 저장했습니다.');
-        }
-
-        // 현재 날짜 표시
-        function displayCurrentDate() {
-            const now = new Date();
-            const options = { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric', 
-                weekday: 'short'
-            };
-            const formatter = new Intl.DateTimeFormat('ko-KR', options);
-            currentDateElement.textContent = formatter.format(now);
-        }
-
-        // 토스트 메시지 표시 함수
-        function showToast(message, type = 'success') {
-            const toast = document.createElement('div');
-            toast.className = `toast ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white`;
-            toast.textContent = message;
-            toastContainer.appendChild(toast);
-            
-            logDebug(`토스트 메시지 표시: ${message} (${type})`);
-            
-            setTimeout(() => {
-                toast.remove();
-            }, 3000);
-        }
-
-        // 로딩 오버레이 표시/숨김 함수
-        function toggleLoading(show) {
-            loadingOverlay.classList.toggle('hidden', !show);
-            logDebug(`로딩 오버레이: ${show ? '표시' : '숨김'}`);
-        }
-
-        // 새로고침 아이콘 애니메이션
-        function animateRefreshIcon() {
-            refreshIcon.classList.add('refresh-spin');
-            setTimeout(() => {
-                refreshIcon.classList.remove('refresh-spin');
-            }, 1000);
-        }
-
-        // 데이터 가져오기 함수
-        async function fetchPosts(showLoading = false) {
-            try {
-                if (showLoading) {
-                    postsContainer.innerHTML = `
-                        <div class="flex items-center justify-center py-12 text-gray-500">
-                            <div class="loader mr-3"></div>
-                            <p>질문을 불러오는 중입니다...</p>
-                        </div>
-                    `;
-                    toggleLoading(true);
-                } else {
-                    animateRefreshIcon();
-                }
-                
-                logDebug('데이터 가져오기 시작...');
-                
-                const timestamp = new Date().getTime();
-                const url = `${webAppUrl}?t=${timestamp}`; // 캐시 방지
-                
-                const response = await fetch(url);
-                
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`HTTP 오류! 상태: ${response.status}, 메시지: ${errorText}`);
-                }
-
-                const rawData = await response.json();
-
-                lastResponseData = rawData; 
-                logDebug('서버 응답 데이터:', 'info');
-                logDebug(rawData);
-                
-                if (Array.isArray(rawData)) {
-                    const postsToRender = rawData.map((post, index) => {
-                        return {
-                            ...post,
-                            Likes: post.Likes || 0,
-                            rowIndex: post.rowIndex
-                        };
-                    });
-                    
-                    logDebug(`${postsToRender.length}개의 게시물을 가져왔습니다.`, 'success');
-                    renderPosts(postsToRender);
-                    postCount.textContent = `총 ${postsToRender.length}개`;
-                } else {
-                    logDebug('유효한 게시물 데이터가 없습니다 (배열 아님).', 'error');
-                    renderPosts([]); // 데이터 형식이 잘못되면 빈 배열로 렌더링
-                    postCount.textContent = '총 0개';
-                }
-                
-            } catch (error) {
-                logDebug(`데이터를 가져오는 중 오류가 발생했습니다: ${error.message}`, 'error');
-                showToast('데이터를 불러오는 중 오류가 발생했습니다. ' + error.message, 'error');
-                // 오류 발생 시에도 '아직 등록된 질문이 없습니다' 메시지를 표시
-                renderPosts([]); 
-                postCount.textContent = '총 0개';
-            } finally {
-                if (showLoading) {
-                    toggleLoading(false);
-                }
-                updateDebugInfo();
-            }
-        }
-
-        // 게시물 렌더링 함수
-        function renderPosts(posts) {
-            if (posts.length === 0) {
-                postsContainer.innerHTML = `
-                    <div class="flex items-center justify-center py-8 text-gray-500">
-                        <p>아직 등록된 질문이 없습니다.</p>
-                    </div>
-                `;
-                return;
-            }
-
-            postsContainer.innerHTML = '';
-            
-            posts.forEach((post, index) => {
-                const postId = post.id || `post-${post.rowIndex || index}`; 
-                const card = document.createElement('div');
-                card.className = 'card bg-white border border-gray-200 rounded-lg p-4 shadow-sm fade-in';
-                card.setAttribute('data-id', postId);
-                
-                let linkPreviewHtml = '';
-                if (post.url) {
-                    try {
-                        const url = new URL(post.url);
-                        const domain = url.hostname;
-                        
-                        if (post.linkPreview && post.linkPreview.title) {
-                            linkPreviewHtml = `
-                                <div class="mt-3 mb-2">
-                                    <a href="${post.url}" target="_blank" class="block link-preview p-3 rounded-md hover:no-underline">
-                                        <div class="flex flex-col">
-                                            <span class="text-sm text-blue-600 font-medium">${domain}</span>
-                                            <span class="text-base font-medium text-gray-800 mt-1">${post.linkPreview.title}</span>
-                                            <p class="text-sm text-gray-600 mt-1">${post.linkPreview.description || ''}</p>
-                                        </div>
-                                    </a>
-                                </div>
-                            `;
-                        } else {
-                            linkPreviewHtml = `
-                                <div class="mt-2">
-                                    <a href="${post.url}" target="_blank" class="text-blue-600 hover:underline text-sm flex items-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                                        </svg>
-                                        ${domain}
-                                    </a>
-                                </div>
-                            `;
-                        }
-                    } catch (e) {
-                        linkPreviewHtml = '';
-                        logDebug(`URL 파싱 오류 (${post.url}): ${e.message}`, 'error');
-                    }
-                }
-                
-                const isLiked = likedPosts[postId] === true;
-                const likesCount = post.Likes || 0;
-                
-                let formattedDate = '날짜 정보 없음';
-                try {
-                    const date = post.timestamp ? new Date(post.timestamp) : new Date(); 
-                    if (!isNaN(date.getTime())) {
-                        formattedDate = `${date.getFullYear()}.${(date.getMonth()+1).toString().padStart(2, '0')}.${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-                    } else {
-                         logDebug(`유효하지 않은 timestamp: ${post.timestamp}`, 'error');
-                    }
-                } catch (e) {
-                    logDebug(`날짜 포맷팅 오류: ${e.message}`, 'error');
-                }
-                
-                card.innerHTML = `
-                    <div class="flex justify-between items-start">
-                        <h3 class="font-medium text-gray-800">${post.name || '익명'}</h3>
-                        <span class="text-xs text-gray-500">${formattedDate}</span>
-                    </div>
-                    <p class="mt-2 text-gray-700 whitespace-pre-wrap">${post.question || '내용 없음'}</p>
-                    ${linkPreviewHtml}
-                    <div class="flex justify-end mt-3">
-                        <button class="heart-button flex items-center space-x-1 text-sm text-gray-500 hover:text-red-500 transition" data-post-id="${postId}" data-row-index="${post.rowIndex}">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ${isLiked ? 'text-red-500 fill-current' : ''}" viewBox="0 0 24 24" stroke="currentColor" stroke-width="${isLiked ? '0' : '2'}">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                            </svg>
-                            <span>${likesCount}</span>
-                        </button>
-                    </div>
-                `;
-                
-                postsContainer.appendChild(card);
-                
-                const heartButton = card.querySelector('.heart-button');
-                heartButton.addEventListener('click', () => toggleLike(postId, heartButton));
-            });
-        }
-        
-        // Toggle like function
-        function toggleLike(postId, button) {
-            const isLiked = likedPosts[postId] === true;
-            likedPosts[postId] = !isLiked;
-            saveLikedPosts();
-            
-            const countSpan = button.querySelector('span');
-            let count = parseInt(countSpan.textContent);
-            
-            if (isLiked) { 
-                count = Math.max(0, count - 1);
-            } else { 
-                count += 1;
-                button.classList.add('heart-animation');
-                setTimeout(() => {
-                    button.classList.remove('heart-animation');
-                }, 500);
-            }
-            
-            countSpan.textContent = count;
-            
-            const heartIcon = button.querySelector('svg');
-            if (!isLiked) { 
-                heartIcon.classList.add('text-red-500', 'fill-current');
-                heartIcon.setAttribute('stroke-width', '0');
-            } else { 
-                heartIcon.classList.remove('text-red-500', 'fill-current');
-                heartIcon.setAttribute('stroke-width', '2');
-            }
-            
-            try {
-                logDebug(`좋아요 상태 서버 업데이트 요청: postId=${postId}, 현재상태=${!isLiked}`);
-                
-                const submissionCard = button.closest('.card');
-                const rowIndex = submissionCard.querySelector('.heart-button').dataset.rowIndex;
-
-                if (!rowIndex) {
-                    logDebug('오류: rowIndex를 찾을 수 없습니다. 좋아요 업데이트 실패.', 'error');
-                    showToast('좋아요 처리 오류: 항목을 찾을 수 없습니다.', 'error');
-                    return;
-                }
-
-                const formData = new URLSearchParams();
-                formData.append('action', 'like');
-                formData.append('rowIndex', rowIndex);
-
-                fetch(webAppUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        logDebug('좋아요 서버 업데이트 성공. 새로운 좋아요 수: ' + data.newLikes, 'success');
-                        countSpan.textContent = data.newLikes; 
-                    } else {
-                        logDebug(`좋아요 서버 업데이트 실패: ${data.message}`, 'error');
-                        showToast(`좋아요 처리 실패: ${data.message}`, 'error');
-                    }
-                })
-                .catch(e => {
-                    logDebug(`좋아요 서버 업데이트 중 네트워크 오류 발생: ${e.message}`, 'error');
-                    showToast('좋아요 처리 중 네트워크 오류가 발생했습니다.', 'error');
-                });
-
-            } catch (e) {
-                logDebug(`좋아요 상태 서버 업데이트 요청 생성 중 오류 발생: ${e.message}`, 'error');
-                showToast('좋아요 기능 오류가 발생했습니다.', 'error');
-            }
-        }
-
-        // Form submission handling
-        submissionForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const nameInput = document.getElementById('name');
-            const questionInput = document.getElementById('question');
-            const urlInput = document.getElementById('url');
-
-            // URL 자동 완성 로직 추가 - URL이 있는 경우에만 처리
-            let urlValue = urlInput.value.trim();
-            if (urlValue) {
-                if (!urlValue.startsWith('http://') && !urlValue.startsWith('https://')) {
-                    urlValue = 'https://' + urlValue;
-                }
-            }
-            urlInput.value = urlValue; // FormData가 읽기 전에 input 필드의 값을 업데이트
-
-            if (!nameInput.value.trim()) {
-                nameInput.focus();
-                showToast('이름을 입력해주세요.', 'error');
-                return;
-            }
-            
-            if (!questionInput.value.trim()) {
-                questionInput.focus();
-                showToast('질문 또는 메시지를 입력해주세요.', 'error');
-                return;
-            }
-            
-            toggleLoading(true);
-            
-            logDebug('질문 제출 시작...');
-            
-            const formData = new FormData(submissionForm);
-            
-            fetch(webAppUrl, {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => {
-                if (!response.ok) {
-                    return response.text().then(text => { throw new Error(text); });
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.status === 'success') {
-                    logDebug('폼 제출 완료, 응답 받음');
-                    submissionModal.classList.add('hidden');
-                    // submissionSuccess.classList.remove('hidden'); // 이 줄을 제거하여 팝업이 뜨지 않도록 함
-                    submissionForm.reset();
-                    showToast('질문이 성공적으로 등록되었습니다.', 'success');
-                    
-                    setTimeout(() => {
-                        fetchPosts(false);
-                        toggleLoading(false);
-                    }, 1000);
-                } else {
-                    logDebug(`폼 제출 실패: ${data.message}`, 'error');
-                    showToast(`질문 등록 실패: ${data.message}`, 'error');
-                    toggleLoading(false);
-                }
-            })
-            .catch(error => {
-                logDebug(`폼 제출 중 오류 발생: ${error.message}`, 'error');
-                showToast('질문 등록 중 오류가 발생했습니다. 다시 시도해주세요. ' + error.message, 'error');
-                toggleLoading(false);
             });
         });
 
-        // Reset data - MODIFIED TO USE POST REQUEST
-        resetDataBtn.addEventListener('click', () => {
-            if (confirm('정말로 모든 데이터를 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-                try {
-                    toggleLoading(true);
-                    logDebug('데이터 초기화 시작...');
-                    
-                    const formData = new URLSearchParams();
-                    formData.append('action', 'reset');
-
-                    fetch(webAppUrl, {
-                        method: 'POST', 
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                        },
-                        body: formData 
-                    })
-                    .then(response => {
-                        if (!response.ok) {
-                            return response.text().then(text => { throw new Error(text); });
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        if (data.status === 'success') {
-                            logDebug('데이터 초기화 완료', 'success');
-                            likedPosts = {};
-                            saveLikedPosts();
-                            fetchPosts(false);
-                            showToast('모든 데이터가 초기화되었습니다.', 'success');
-                            adminModal.classList.add('hidden');
-                            toggleLoading(false);
-                        } else {
-                            logDebug(`데이터 초기화 실패: ${data.message}`, 'error');
-                            showToast(`데이터 초기화 실패: ${data.message}`, 'error');
-                            toggleLoading(false);
-                        }
-                    })
-                    .catch(error => {
-                        logDebug(`초기화 중 오류가 발생했습니다: ${error.message}`, 'error');
-                        showToast('데이터 초기화 중 오류가 발생했습니다. ' + error.message, 'error');
-                        toggleLoading(false);
-                    });
-                    
-                } catch (error) {
-                    logDebug(`초기화 중 오류가 발생했습니다: ${error.message}`, 'error');
-                    showToast('데이터 초기화 중 오류가 발생했습니다.', 'error');
-                    toggleLoading(false);
-                }
-            }
-        });
-
-        // Refresh button click event
-        refreshBtn.addEventListener('click', () => {
-            logDebug('새로고침 버튼 클릭');
-            fetchPosts(false);
-        });
-
-        // Add question button click event
-        addQuestionBtn.addEventListener('click', () => {
-            submissionModal.classList.remove('hidden');
-            document.getElementById('name').focus();
-        });
-
-        // Close submission modal
-        closeSubmissionBtn.addEventListener('click', () => {
-            submissionModal.classList.add('hidden');
-        });
-
-        // Admin button click event
-        adminBtn.addEventListener('click', () => {
-            adminModal.classList.remove('hidden');
-            passwordContainer.classList.remove('hidden');
-            adminControls.classList.add('hidden');
-            adminPassword.value = '';
-            adminPassword.focus();
-        });
-
-        // Debug button click event (이 부분은 그대로 유지됩니다)
-        debugBtn.addEventListener('click', () => {
-            updateDebugInfo();
-            debugModal.classList.remove('hidden');
-        });
-
-        // Close debug modal
-        closeDebugBtn.addEventListener('click', () => {
-            debugModal.classList.add('hidden');
-        });
-
-        closeDebugBtnBottom.addEventListener('click', () => {
-            debugModal.classList.add('hidden');
-        });
-
-        // Clear debug log
-        clearDebugLogBtn.addEventListener('click', () => {
-            debugLogs = [];
-            debugLogEl.innerHTML = '';
-            logDebug('디버그 로그를 지웠습니다.');
-        });
-
-        // Admin authentication
-        verifyAdminBtn.addEventListener('click', () => {
-            const password = adminPassword.value;
+        // Add hover effects to cards
+        document.querySelectorAll('.card-hover').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.transform = 'translateY(-5px)';
+            });
             
-            if (password === '24003') {
-                passwordContainer.classList.add('hidden');
-                adminControls.classList.remove('hidden');
-                logDebug('관리자 인증 성공');
-                // 관리자 인증 성공 시 디버그 버튼 표시
-                if (DEBUG_MODE) {
-                    debugBtn.classList.remove('hidden'); 
-                }
-            } else {
-                adminPassword.classList.add('shake');
-                showToast('비밀번호가 올바르지 않습니다.', 'error');
-                logDebug('관리자 인증 실패: 잘못된 비밀번호', 'error');
-                
-                setTimeout(() => {
-                    adminPassword.classList.remove('shake');
-                }, 500);
-            }
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'translateY(0)';
+            });
         });
-
-        // Close admin modal
-        cancelAdminBtn.addEventListener('click', () => {
-            adminModal.classList.add('hidden');
-        });
-
-        closeAdminBtn.addEventListener('click', () => {
-            adminModal.classList.add('hidden');
-        });
-
-        // Close modal when clicking outside
-        adminModal.addEventListener('click', (e) => {
-            if (e.target === adminModal) {
-                adminModal.classList.add('hidden');
-            }
-        });
-
-        submissionModal.addEventListener('click', (e) => {
-            if (e.target === submissionModal) {
-                submissionModal.classList.add('hidden');
-            }
-        });
-
-        debugModal.addEventListener('click', (e) => {
-            if (e.target === debugModal) {
-                debugModal.classList.add('hidden');
-            }
-        });
-
-        // Enter key for admin password
-        adminPassword.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                verifyAdminBtn.click();
-            }
-        });
-
-        // On page load, load liked status and fetch data
-        document.addEventListener('DOMContentLoaded', () => {
-            logDebug('페이지 로드 완료');
-            displayCurrentDate();
-            loadLikedPosts();
-            fetchPosts(true);
-        });
-
-        // Auto refresh (every 1 minute)
-        setInterval(() => {
-            logDebug('자동 새로고침 실행');
-            fetchPosts(false);
-        }, 60000);
     </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'965c5c8b23f0ea9e',t:'MTc1MzYyMTY2NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
